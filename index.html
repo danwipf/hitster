@@ -3,37 +3,26 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Hitster Fabia Edition</title>
-    <meta name="description" content="QR scannen oder URL eingeben → 30s Spotify Preview" />
+    <title>Hitster – YouTube Music</title>
     <style>
         :root{
-            --bg:#07070a;
-            --panel:#141418;
-            --panel2:#0f0f13;
-            --border:rgba(255,255,255,.12);
-            --text:rgba(255,255,255,.92);
-            --muted:rgba(255,255,255,.65);
-            --accent:#1db954;
-            --warn:#ffb3b3;
-            --ok:#b7ffcf;
-            --radius:18px;
+            --bg:#07070a; --panel:#141418; --border:rgba(255,255,255,.12);
+            --text:rgba(255,255,255,.92); --muted:rgba(255,255,255,.65);
+            --accent:#ff0033; --radius:18px;
         }
         *{box-sizing:border-box}
         body{
             margin:0; min-height:100vh;
             font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
             color:var(--text);
-            background:
-                    radial-gradient(900px 600px at 50% 0%, rgba(29,185,84,.14), transparent 55%),
-                    var(--bg);
+            background: radial-gradient(900px 600px at 50% 0%, rgba(255,0,51,.14), transparent 55%), var(--bg);
             display:flex; justify-content:center;
         }
         .wrap{width:min(560px,100%); padding:18px 16px 28px;}
         h1{margin:10px 0 4px; font-weight:850; letter-spacing:-.5px; text-align:center}
         .sub{margin:0 0 16px; text-align:center; color:var(--muted); font-size:14px}
-
         .panel{
-            background:linear-gradient(180deg, var(--panel), var(--panel2));
+            background:var(--panel);
             border:1px solid var(--border);
             border-radius:var(--radius);
             padding:14px;
@@ -56,8 +45,7 @@
         }
         button:disabled{opacity:.55; cursor:not-allowed}
         input{
-            flex:1;
-            min-width:220px;
+            flex:1; min-width:220px;
             padding:12px 14px;
             border-radius:14px;
             border:1px solid var(--border);
@@ -66,42 +54,19 @@
             outline:none;
         }
         input::placeholder{color:rgba(255,255,255,.4)}
-        .hint{color:var(--muted); font-size:13px; margin:8px 0 0}
-        .msg{margin-top:8px; font-size:13px; color:var(--muted)}
-        .err{color:var(--warn)}
-        .ok{color:var(--ok)}
-        #reader{
-            width:100%;
-            border-radius:14px;
-            overflow:hidden;
-            margin-top:12px;
-            display:none;
-        }
-
-        .player{display:none}
-        .meta{display:flex; gap:12px; align-items:center}
-        .cover{
-            width:70px;height:70px;border-radius:16px;
-            background:rgba(255,255,255,.08);
-            border:1px solid var(--border);
-            overflow:hidden; flex:0 0 auto;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .cover img{width:100%;height:100%;object-fit:cover}
-        .title{margin:0; font-weight:850; letter-spacing:-.2px}
-        .artist{margin:2px 0 0; color:var(--muted); font-size:13px}
-        .links{margin-top:8px; font-size:13px; color:var(--muted)}
-        .links a{color:var(--accent)}
-        .timerRow{display:flex; gap:10px; align-items:center; margin-top:12px}
-        .time{width:44px; color:var(--muted); font-variant-numeric:tabular-nums}
-        input[type="range"]{width:100%}
+        #reader{width:100%; border-radius:14px; overflow:hidden; margin-top:12px; display:none}
+        .msg{margin-top:10px; font-size:13px; color:var(--muted)}
+        .ok{color:#b7ffcf}
+        .err{color:#ffb3b3}
+        a{color:var(--accent)}
+        code{color:rgba(255,255,255,.85)}
     </style>
 </head>
 
 <body>
 <div class="wrap">
     <h1>Hitster</h1>
-    <p class="sub">QR scannen oder Spotify-URL eingeben → 30 Sekunden Preview</p>
+    <p class="sub">QR scannen → YouTube Music öffnen</p>
 
     <div class="panel">
         <div class="row">
@@ -111,200 +76,78 @@
         </div>
         <div id="reader"></div>
         <div id="scanStatus" class="msg"></div>
-        <div class="hint">Tipp: Kamera-Zugriff zulassen. Am PC kannst du unten auch die URL einfügen.</div>
+        <div class="msg">
+            QR-Inhalt darf sein:
+            <br>• <code>https://music.youtube.com/watch?v=VIDEO_ID</code>
+            <br>• <code>https://www.youtube.com/watch?v=VIDEO_ID</code>
+            <br>• oder nur <code>VIDEO_ID</code>
+        </div>
     </div>
 
     <div class="panel">
         <div class="row">
-            <input id="manualInput" placeholder="Spotify Track-URL oder 22 Zeichen Track-ID" />
-            <button class="primary" id="manualGo">Laden</button>
+            <input id="manualInput" placeholder="YouTube/YouTube Music Link oder VIDEO_ID" />
+            <button class="primary" id="manualGo">Öffnen</button>
         </div>
         <div id="manualMsg" class="msg"></div>
     </div>
 
-    <div class="panel player" id="playerPanel">
-        <div class="meta">
-            <div class="cover" id="coverBox">♪</div>
-            <div style="min-width:0">
-                <p class="title" id="trackTitle">—</p>
-                <p class="artist" id="trackArtist">—</p>
-                <div class="links" id="openSpotify"></div>
-            </div>
+    <div class="panel">
+        <div class="msg">
+            Tipp: Auf iPhone am besten in <b>Safari</b> öffnen (nicht in In-App Browsern).
         </div>
-
-        <div class="timerRow">
-            <div class="time" id="tNow">0:00</div>
-            <input id="seek" type="range" min="0" max="30" value="0" step="0.1" />
-            <div class="time" id="tEnd">0:30</div>
-        </div>
-
-        <div class="row" style="margin-top:12px">
-            <button class="primary" id="btnPlay" disabled>▶️ Play 30s</button>
-            <button id="btnPause" disabled>⏸ Pause</button>
-            <button id="btnRestart" disabled>↺ Restart</button>
-        </div>
-
-        <div id="playerMsg" class="msg"></div>
-        <audio id="audio" preload="none"></audio>
     </div>
 </div>
 
-<!-- QR library (browser build) -->
+<!-- QR library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-    // ===== CONFIG =====
-    const SONGS_URL = "./songs.json";
-    const MAX_SECONDS = 30;
-
-    // ===== STATE =====
-    let songs = null;
     let scanner = null;
     let torchOn = false;
 
-    // ===== DOM =====
     const $ = (id) => document.getElementById(id);
 
-    function fmt(sec){
-        sec = Math.max(0, Math.min(MAX_SECONDS, sec));
-        const m = Math.floor(sec / 60);
-        const s = Math.floor(sec % 60);
-        return `${m}:${String(s).padStart(2,'0')}`;
-    }
-
-    async function loadSongs(){
-        if (songs) return songs;
-        const res = await fetch(SONGS_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("songs.json nicht gefunden (liegt sie im Repo-Root?)");
-        songs = await res.json();
-        return songs;
-    }
-
-    function extractTrackId(text){
+    function extractVideoId(text){
         text = (text || "").trim();
 
-        // https://open.spotify.com/track/<id>
-        let m = text.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]{22})/);
+        // youtu.be/<id>
+        let m = text.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
         if (m) return m[1];
 
-        // spotify:track:<id>
-        m = text.match(/spotify:track:([a-zA-Z0-9]{22})/);
+        // youtube.com/watch?v=<id> or music.youtube.com/watch?v=<id>
+        m = text.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+        if (m) return m[1];
+
+        // youtube.com/shorts/<id>
+        m = text.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{6,})/);
         if (m) return m[1];
 
         // plain id
-        m = text.match(/^([a-zA-Z0-9]{22})$/);
+        m = text.match(/^([a-zA-Z0-9_-]{6,})$/);
         if (m) return m[1];
 
         return null;
     }
 
-    function setPlayerButtons(enabled){
-        $("btnPlay").disabled = !enabled;
-        $("btnPause").disabled = !enabled;
-        $("btnRestart").disabled = !enabled;
+    function openYouTubeMusic(videoId){
+        const musicUrl = `https://music.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+
+        // The most reliable way: open the music URL.
+        // On mobile, if the app is installed, it will usually offer/redirect to the app.
+        window.location.href = musicUrl;
     }
 
-    function showTrackUI({ id, title, artist, cover, preview_url }){
-        $("playerPanel").style.display = "block";
-
-        $("trackTitle").textContent = title || "Unbekannter Titel";
-        $("trackArtist").textContent = artist || "";
-
-        // cover
-        const coverBox = $("coverBox");
-        coverBox.innerHTML = "♪";
-        if (cover){
-            coverBox.innerHTML = `<img alt="" src="${cover}">`;
-        }
-
-        // spotify link
-        const openUrl = `https://open.spotify.com/track/${id}`;
-        $("openSpotify").innerHTML = `In Spotify öffnen: <a href="${openUrl}" target="_blank" rel="noreferrer">Link</a>`;
-
-        // reset audio UI
-        const audio = $("audio");
-        audio.pause();
-        audio.currentTime = 0;
-        $("seek").value = 0;
-        $("tNow").textContent = "0:00";
-
-        if (!preview_url){
-            $("playerMsg").innerHTML = `<span class="err">Keine Spotify-Preview verfügbar für diesen Track.</span> Bitte über den Link in Spotify öffnen.`;
-            audio.removeAttribute("src");
-            setPlayerButtons(false);
+    async function handleValue(value, msgElId){
+        const id = extractVideoId(value);
+        if (!id){
+            $(msgElId).innerHTML = `<span class="err">Kein Video-ID erkannt.</span> Bitte Link oder ID prüfen.`;
             return;
         }
-
-        audio.src = preview_url;
-        $("playerMsg").innerHTML = `<span class="ok">Preview bereit.</span> Tippe auf “Play 30s”.`;
-        setPlayerButtons(true);
+        $(msgElId).innerHTML = `Erkannt: <span class="ok">${id}</span> – öffne YouTube Music…`;
+        openYouTubeMusic(id);
     }
 
-    async function loadTrackById(id){
-        const db = await loadSongs();
-        const t = db[id];
-
-        if (!t){
-            $("playerPanel").style.display = "block";
-            $("trackTitle").textContent = "Nicht in songs.json";
-            $("trackArtist").textContent = `ID: ${id}`;
-            $("coverBox").innerHTML = "♪";
-            $("openSpotify").innerHTML = `In Spotify öffnen: <a href="https://open.spotify.com/track/${id}" target="_blank" rel="noreferrer">Link</a>`;
-            $("playerMsg").innerHTML = `<span class="err">Dieser Track ist nicht in songs.json eingetragen.</span>`;
-            setPlayerButtons(false);
-            $("audio").removeAttribute("src");
-            return;
-        }
-
-        showTrackUI({
-            id,
-            title: t.title,
-            artist: t.artist,
-            cover: t.cover,
-            preview_url: t.preview_url
-        });
-    }
-
-    // ===== AUDIO BINDINGS =====
-    function bindAudio(){
-        const audio = $("audio");
-
-        audio.addEventListener("timeupdate", () => {
-            const t = Math.min(audio.currentTime, MAX_SECONDS);
-            $("tNow").textContent = fmt(t);
-            $("seek").value = t;
-
-            if (audio.currentTime >= MAX_SECONDS){
-                audio.pause();
-                audio.currentTime = 0;
-                $("seek").value = 0;
-            }
-        });
-
-        $("seek").addEventListener("input", (e) => {
-            const v = parseFloat(e.target.value || "0");
-            audio.currentTime = Math.min(v, MAX_SECONDS);
-        });
-
-        $("btnPlay").addEventListener("click", async () => {
-            try{
-                await audio.play(); // must be user gesture: click -> ok
-                $("playerMsg").textContent = "";
-            }catch(e){
-                $("playerMsg").innerHTML = `<span class="err">Audio konnte nicht starten. Tippe nochmal oder öffne Spotify.</span>`;
-            }
-        });
-
-        $("btnPause").addEventListener("click", () => audio.pause());
-        $("btnRestart").addEventListener("click", () => {
-            audio.pause();
-            audio.currentTime = 0;
-            $("seek").value = 0;
-            $("tNow").textContent = "0:00";
-        });
-    }
-
-    // ===== SCANNER =====
     async function startScanner(){
         $("scanStatus").textContent = "Starte Kamera…";
         $("reader").style.display = "block";
@@ -314,13 +157,7 @@
         const config = { fps: 12, qrbox: { width: 250, height: 250 } };
 
         const onScanSuccess = async (decodedText) => {
-            const id = extractTrackId(decodedText);
-            if (!id){
-                $("scanStatus").innerHTML = `<span class="err">QR erkannt, aber keine Track-ID gefunden.</span>`;
-                return;
-            }
-            $("scanStatus").innerHTML = `Erkannt: <span class="ok">${id}</span>`;
-            await loadTrackById(id);
+            await handleValue(decodedText, "scanStatus");
         };
 
         // Prefer back camera; fallback to first camera
@@ -381,37 +218,26 @@
         }
     }
 
-    // ===== MANUAL INPUT =====
-    async function manualLoad(){
-        const text = $("manualInput").value;
-        const id = extractTrackId(text);
-        if (!id){
-            $("manualMsg").innerHTML = `<span class="err">Keine Track-ID erkannt. Bitte Spotify Track-Link oder 22-Zeichen-ID.</span>`;
-            return;
-        }
-        $("manualMsg").innerHTML = `Lade: <span class="ok">${id}</span>`;
-        await loadTrackById(id);
-    }
-
-    // ===== INIT =====
-    bindAudio();
-    $("tEnd").textContent = "0:30";
-
+    // events
     $("btnStart").addEventListener("click", () => startScanner().catch(err => {
         console.error(err);
-        $("scanStatus").innerHTML =
-            `<span class="err">Kamera konnte nicht gestartet werden: ${err?.message || err}</span>`;
+        $("scanStatus").innerHTML = `<span class="err">Kamera konnte nicht gestartet werden: ${err?.message || err}</span>`;
         stopScanner();
     }));
+
     $("btnStop").addEventListener("click", () => stopScanner());
     $("btnTorch").addEventListener("click", () => toggleTorch());
 
-    $("manualGo").addEventListener("click", () => manualLoad().catch(e => {
-        $("manualMsg").innerHTML = `<span class="err">${e?.message || e}</span>`;
-    }));
+    $("manualGo").addEventListener("click", () =>
+        handleValue($("manualInput").value, "manualMsg").catch(e => {
+            $("manualMsg").innerHTML = `<span class="err">${e?.message || e}</span>`;
+        })
+    );
+
     $("manualInput").addEventListener("keydown", (e) => {
         if (e.key === "Enter") $("manualGo").click();
     });
 </script>
 </body>
 </html>
+
