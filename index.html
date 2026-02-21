@@ -5,129 +5,59 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>Fabiatster</title>
     <style>
-        :root {
-            --bg: #07070a;
-            --panel: #141418;
-            --border: rgba(255, 255, 255, .12);
-            --text: rgba(255, 255, 255, .92);
-            --muted: rgba(255, 255, 255, .65);
-            --accent: #ff0033;
-            --radius: 18px;
+        :root{
+            --bg:#07070a;
+            --panel:#141418;
+            --border:rgba(255,255,255,.12);
+            --text:rgba(255,255,255,.92);
+            --muted:rgba(255,255,255,.65);
+            --accent:#ff0033;
+            --radius:18px;
         }
+        *{ box-sizing:border-box }
+        body{
+            margin:0; min-height:100vh;
+            font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+            color:var(--text);
+            background: radial-gradient(900px 600px at 50% 0%, rgba(255,0,51,.14), transparent 55%), var(--bg);
+            display:flex;
+            justify-content:center;
+        }
+        .wrap{ width:min(560px,100%); padding:18px 16px 28px; }
+        h1{ margin:10px 0 4px; font-weight:850; letter-spacing:-.5px; text-align:center; }
+        .sub{ margin:0 0 16px; text-align:center; color:var(--muted); font-size:14px; }
 
-        * {
-            box-sizing: border-box
+        .panel{
+            background:var(--panel);
+            border:1px solid var(--border);
+            border-radius:var(--radius);
+            padding:14px;
+            margin:12px 0;
         }
+        .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        button{
+            padding:12px 14px;
+            border-radius:14px;
+            border:1px solid var(--border);
+            background:rgba(255,255,255,.06);
+            color:var(--text);
+            font-weight:750;
+            cursor:pointer;
+        }
+        button.primary{ background:var(--accent); border-color:var(--accent); color:#0b0c10; }
+        button:disabled{ opacity:.55; cursor:not-allowed; }
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-            color: var(--text);
-            background: radial-gradient(900px 600px at 50% 0%, rgba(255, 0, 51, .14), transparent 55%), var(--bg);
-            display: flex;
-            justify-content: center;
+        #reader{
+            width:100%;
+            border-radius:14px;
+            overflow:hidden;
+            margin-top:12px;
+            display:none;
         }
-
-        .wrap {
-            width: min(560px, 100%);
-            padding: 18px 16px 28px;
-        }
-
-        h1 {
-            margin: 10px 0 4px;
-            font-weight: 850;
-            letter-spacing: -.5px;
-            text-align: center
-        }
-
-        .sub {
-            margin: 0 0 16px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 14px
-        }
-
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px;
-            margin: 12px 0;
-        }
-
-        .row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center
-        }
-
-        button {
-            padding: 12px 14px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, .06);
-            color: var(--text);
-            font-weight: 750;
-            cursor: pointer;
-        }
-
-        button.primary {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #0b0c10;
-        }
-
-        button:disabled {
-            opacity: .55;
-            cursor: not-allowed
-        }
-
-        input {
-            flex: 1;
-            min-width: 220px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(0, 0, 0, .25);
-            color: var(--text);
-            outline: none;
-        }
-
-        input::placeholder {
-            color: rgba(255, 255, 255, .4)
-        }
-
-        #reader {
-            width: 100%;
-            border-radius: 14px;
-            overflow: hidden;
-            margin-top: 12px;
-            display: none
-        }
-
-        .msg {
-            margin-top: 10px;
-            font-size: 13px;
-            color: var(--muted)
-        }
-
-        .ok {
-            color: #b7ffcf
-        }
-
-        .err {
-            color: #ffb3b3
-        }
-
-        a {
-            color: var(--accent)
-        }
-
-        code {
-            color: rgba(255, 255, 255, .85)
-        }
+        .msg{ margin-top:10px; font-size:13px; color:var(--muted); }
+        .ok{ color:#b7ffcf; }
+        .err{ color:#ffb3b3; }
+        a{ color:var(--accent); }
     </style>
 </head>
 
@@ -145,16 +75,6 @@
         <div id="reader"></div>
         <div id="scanStatus" class="msg"></div>
     </div>
-
-
-    <div class="panel">
-        <div class="row">
-            <div><b>Sensor Debug</b></div>
-            <button class="primary" id="debugBtn">🧪 Sensor Debug starten</button>
-            <div>z: <span id="debugZ">—</span></div>
-            <div>Status: <span id="debugState">Warte…</span></div>
-        </div>
-    </div>
 </div>
 
 <!-- QR library -->
@@ -164,242 +84,199 @@
     let scanner = null;
     let torchOn = false;
 
+    // One-shot state
+    let pendingVideoId = null;     // zuletzt gescannte ID
+    let launched = false;          // wurde bereits geöffnet?
+    let motionListenerAttached = false;
+
     const $ = (id) => document.getElementById(id);
 
-    function extractVideoId(text) {
+    function extractVideoId(text){
         text = (text || "").trim();
 
-        // youtu.be/<id>
         let m = text.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
         if (m) return m[1];
 
-        // youtube.com/watch?v=<id> or music.youtube.com/watch?v=<id>
         m = text.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
         if (m) return m[1];
 
-        // youtube.com/shorts/<id>
         m = text.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{6,})/);
         if (m) return m[1];
 
-        // plain id
         m = text.match(/^([a-zA-Z0-9_-]{6,})$/);
         if (m) return m[1];
 
         return null;
     }
 
-    function startDebugMotion() {
-
-        async function ensurePermission() {
-            if (typeof DeviceMotionEvent !== "undefined" &&
-                typeof DeviceMotionEvent.requestPermission === "function") {
-
-                const res = await DeviceMotionEvent.requestPermission();
-                if (res !== "granted") {
-                    alert("Sensor Permission verweigert");
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function onMotion(e) {
-            const g = e.accelerationIncludingGravity;
-            if (!g || typeof g.z !== "number") return;
-
-            const z = g.z;
-            document.getElementById("debugZ").textContent = z.toFixed(2);
-
-            if (z > 7) {
-                document.getElementById("debugState").textContent = "📱 Display nach oben";
-            } else if (z < -7) {
-                document.getElementById("debugState").textContent = "📱 Display nach unten";
-            } else {
-                document.getElementById("debugState").textContent = "↔️ Gekippt / seitlich";
-            }
-        }
-
-        ensurePermission().then(ok => {
-            if (ok) {
-                window.addEventListener("devicemotion", onMotion, {passive: true});
-            }
-        });
-    }
-
-    function openYouTubeMusic(videoId) {
+    function openYouTubeMusic(videoId){
         const webUrl = `https://music.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
 
         const ua = navigator.userAgent || "";
         const isAndroid = /Android/i.test(ua);
         const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-        if (isAndroid) {
-            // Android: intent:// ist am zuverlässigsten und öffnet die App, wenn installiert
+        if (isAndroid){
             const intentUrl =
                 `intent://music.youtube.com/watch?v=${encodeURIComponent(videoId)}` +
                 `#Intent;scheme=https;package=com.google.android.apps.youtube.music;end`;
+
             window.location.href = intentUrl;
-
-            // Fallback (falls App nicht installiert)
-            setTimeout(() => {
-                window.location.href = webUrl;
-            }, 900);
+            setTimeout(() => { window.location.href = webUrl; }, 900);
             return;
         }
 
-        if (isIOS) {
-            // iOS: Deep link versuchen. Wenn blockiert, fällt er auf webUrl zurück.
-            // Hinweis: iOS blockt oft automatische Weiterleitung – manchmal braucht es einen Button-Klick.
+        if (isIOS){
             const appUrl = `youtube-music://watch?v=${encodeURIComponent(videoId)}`;
-
-            // Versuch App
             window.location.href = appUrl;
-
-            // Fallback auf Web nach kurzer Zeit
-            setTimeout(() => {
-                window.location.href = webUrl;
-            }, 900);
+            setTimeout(() => { window.location.href = webUrl; }, 900);
             return;
         }
 
-        // Desktop oder unbekannt: Web
         window.location.href = webUrl;
     }
 
+    async function ensureMotionPermissionFromClick(){
+        // Muss direkt aus einem echten Button-Click kommen (iOS)
+        if (typeof DeviceMotionEvent !== "undefined" &&
+            typeof DeviceMotionEvent.requestPermission === "function") {
+            const res = await DeviceMotionEvent.requestPermission();
+            if (res !== "granted") throw new Error("Sensor Permission verweigert");
+        }
+    }
 
-    async function handleValue(value, msgElId) {
-        const id = extractVideoId(value);
+    function attachMotionListenerOnce(){
+        if (motionListenerAttached) return;
+        motionListenerAttached = true;
 
-        if (!id) {
-            $(msgElId).innerHTML =
-                `<span class="err">Kein Video-ID erkannt.</span>`;
+        window.addEventListener("devicemotion", (e) => {
+            // One-shot: erst öffnen wenn wir eine ID haben und noch nicht geöffnet wurde
+            if (!pendingVideoId || launched) return;
+
+            const g = e.accelerationIncludingGravity;
+            if (!g || typeof g.z !== "number") return;
+
+            const z = g.z;
+
+            // ✅ Dein Wunsch: z zwischen 8 und 10 => Trigger
+            if (z >= 8 && z <= 10){
+                launched = true;
+                $("scanStatus").innerHTML = `<span class="ok">✅ Öffne YouTube Music…</span>`;
+                openYouTubeMusic(pendingVideoId);
+            }
+        }, { passive: true });
+    }
+
+    async function handleScanValue(decodedText){
+        const id = extractVideoId(decodedText);
+        if (!id){
+            $("scanStatus").innerHTML = `<span class="err">Kein Video-ID erkannt.</span>`;
             return;
         }
 
-        // Scanner stoppen
-        if (scanner) {
-            try {
-                await scanner.stop();
-            } catch (e) {
-            }
+        // Neues Scan-Ergebnis => one-shot wieder erlauben
+        pendingVideoId = id;
+        launched = false;
+
+        // Optional: Scanner stoppen (damit nicht dauernd neu scannt)
+        if (scanner){
+            try { await scanner.stop(); } catch(e) {}
         }
 
-        $(msgElId).innerHTML = `
-      <div style="font-size:22px;font-weight:900;margin-bottom:10px;">
+        $("scanStatus").innerHTML = `
+      <div style="font-size:20px;font-weight:900;margin-bottom:8px;">
         🎵 Song bereit!
       </div>
-      <div style="font-size:28px;font-weight:900;color:#ff0033;">
-        Dreh das Handy um!
+      <div style="font-size:16px;font-weight:800;margin-bottom:10px;">
+        (Trigger: z zwischen 8–10)
       </div>
-      <div class="msg">Warte auf Umdrehen…</div>
+      <div class="msg">
+        Oder manuell:
+        <button class="primary" id="openBtn">Link öffnen</button>
+      </div>
+      <div class="msg">
+        <a href="https://music.youtube.com/watch?v=${id}">Web öffnen (Fallback)</a>
+      </div>
     `;
 
-        startOrientationListener(id);
-    }
-
-    function startOrientationListener(videoId) {
-
-        function handleOrientation(event) {
-            const beta = event.beta; // Vor/Zurück-Neigung
-
-            if (beta !== null && Math.abs(beta) > 150) {
-                window.removeEventListener("deviceorientation", handleOrientation);
-                openYouTubeMusic(videoId);
-            }
-        }
-
-        // iOS braucht explizite Permission
-        if (typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function") {
-
-            DeviceOrientationEvent.requestPermission()
-                .then(response => {
-                    if (response === "granted") {
-                        window.addEventListener("deviceorientation", handleOrientation);
-                    } else {
-                        alert("Bewegungssensor nicht erlaubt.");
-                    }
-                })
-                .catch(console.error);
-
-        } else {
-            // Android
-            window.addEventListener("deviceorientation", handleOrientation);
+        // Manuell öffnen (immer möglich, auch wenn Sensor nicht triggert)
+        const btn = document.getElementById("openBtn");
+        if (btn){
+            btn.addEventListener("click", () => {
+                launched = true; // verhindert späteres Auto-Triggern
+                openYouTubeMusic(id);
+            });
         }
     }
 
-
-    async function startScanner() {
+    async function startScanner(){
         $("scanStatus").textContent = "Starte Kamera…";
         $("reader").style.display = "block";
         $("reader").innerHTML = "";
 
+        // Beim Klick auf Scanner starten holen wir Permission & starten Motion-Listener
+        // (damit iOS Popup kommt)
+        await ensureMotionPermissionFromClick();
+        attachMotionListenerOnce();
+
         scanner = new Html5Qrcode("reader");
-        const config = {fps: 12, qrbox: {width: 250, height: 250}};
+        const config = { fps: 12, qrbox: { width: 250, height: 250 } };
 
         const onScanSuccess = async (decodedText) => {
-            await handleValue(decodedText, "scanStatus");
+            await handleScanValue(decodedText);
         };
 
         // Prefer back camera; fallback to first camera
-        try {
-            await scanner.start({facingMode: "environment"}, config, onScanSuccess);
-        } catch (e1) {
-            console.warn("facingMode environment failed:", e1);
+        try{
+            await scanner.start({ facingMode: "environment" }, config, onScanSuccess);
+        }catch(e1){
             const cams = await Html5Qrcode.getCameras();
-            if (!cams || cams.length === 0) {
-                throw new Error("Keine Kamera gefunden (Berechtigung?)");
-            }
-            await scanner.start({deviceId: {exact: cams[0].id}}, config, onScanSuccess);
+            if (!cams || cams.length === 0) throw new Error("Keine Kamera gefunden (Berechtigung?)");
+            await scanner.start({ deviceId: { exact: cams[0].id } }, config, onScanSuccess);
         }
 
         $("btnStart").disabled = true;
         $("btnStop").disabled = false;
 
         // Torch availability
-        try {
+        try{
             const caps = await scanner.getRunningTrackCapabilities();
-            if (caps && caps.torch) {
-                $("btnTorch").disabled = false;
-            } else {
-                $("btnTorch").disabled = true;
-            }
-        } catch (e) {
+            $("btnTorch").disabled = !(caps && caps.torch);
+        }catch(e){
             $("btnTorch").disabled = true;
         }
 
         $("scanStatus").textContent = "Scanner läuft. QR in die Box halten.";
     }
 
-    async function stopScanner() {
+    async function stopScanner(){
         torchOn = false;
         $("btnTorch").textContent = "🔦 Licht";
         $("btnTorch").disabled = true;
 
-        if (scanner) {
-            try {
-                await scanner.stop();
-            } catch (e) {
-            }
-            try {
-                await scanner.clear();
-            } catch (e) {
-            }
+        if (scanner){
+            try{ await scanner.stop(); }catch(e){}
+            try{ await scanner.clear(); }catch(e){}
             scanner = null;
         }
+
+        // Reset state: nächster Scan soll wieder möglich sein
+        pendingVideoId = null;
+        launched = false;
+
         $("reader").style.display = "none";
         $("scanStatus").textContent = "";
         $("btnStart").disabled = false;
         $("btnStop").disabled = true;
     }
 
-    async function toggleTorch() {
+    async function toggleTorch(){
         if (!scanner) return;
-        try {
+        try{
             torchOn = !torchOn;
-            await scanner.applyVideoConstraints({advanced: [{torch: torchOn}]});
+            await scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
             $("btnTorch").textContent = torchOn ? "🔦 Licht aus" : "🔦 Licht";
-        } catch (e) {
+        }catch(e){
             $("scanStatus").innerHTML = `<span class="err">Licht nicht unterstützt.</span>`;
             $("btnTorch").disabled = true;
         }
@@ -408,26 +285,12 @@
     // events
     $("btnStart").addEventListener("click", () => startScanner().catch(err => {
         console.error(err);
-        $("scanStatus").innerHTML = `<span class="err">Kamera konnte nicht gestartet werden: ${err?.message || err}</span>`;
+        $("scanStatus").innerHTML = `<span class="err">Start fehlgeschlagen: ${err?.message || err}</span>`;
         stopScanner();
     }));
 
     $("btnStop").addEventListener("click", () => stopScanner());
     $("btnTorch").addEventListener("click", () => toggleTorch());
-    $("debugBtn").addEventListener("click", () => startDebugMotion());
-
-    $("manualGo").addEventListener("click", () =>
-        handleValue($("manualInput").value, "manualMsg").catch(e => {
-            $("manualMsg").innerHTML = `<span class="err">${e?.message || e}</span>`;
-        })
-    );
-
-    $("manualInput").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") $("manualGo").click();
-    });
-
-
 </script>
 </body>
 </html>
-
